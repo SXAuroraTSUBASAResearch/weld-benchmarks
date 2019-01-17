@@ -2,6 +2,10 @@
 #include <dlfcn.h>
 #include <stdlib.h>
 
+extern void weld_runtime_init();
+extern void* run(void*);
+
+extern 
 int main()
 {
 #if 0
@@ -10,10 +14,13 @@ int main()
         printf("Error: %s\n", dlerror());
     }
 #endif
+#if 0
     void* handle2 = dlopen("./libverun.so", RTLD_NOW);
     if (!handle2) {
         printf("Error: %s\n", dlerror());
     }
+#endif
+#if 0
 #if 1
     void (*init)() = (void (*)())dlsym(handle2, "weld_runtime_init");
     (*init)();
@@ -22,6 +29,8 @@ int main()
     (*run_begin)((void (*)(void*))0, 0, 12, 2);
 #endif
 #endif
+#endif
+    weld_runtime_init();
 
     printf("reading csv file\n");
     // Read CSV file
@@ -45,8 +54,7 @@ int main()
     for (int i = 0; i < LENGTH; ++i) {
         // NY|534078|330336|938|1.6|1.6|1.6|1.6|1.6|1.6|1.6|1.6|1.6|1.6|1.6|1.6|1.6|1.6|1.6|1.6|1.6|1.6|1.6|1.6
         if (fscanf(fp, "%2s|%lg|%lg|%lg|%lg|%lg|%lg|%lg|%lg|%lg|%lg|%lg|%lg|%lg|%lg|%lg|%lg|%lg|%lg|%lg|%lg|%lg|%lg|%lg", data[i].name, &(data[i].data[0]), &(data[i].data[1]), &(data[i].data[2]), &(data[i].data[3]), &(data[i].data[4]), &(data[i].data[5]), &(data[i].data[6]), &(data[i].data[7]), &(data[i].data[8]), &(data[i].data[9]), &(data[i].data[10]), &(data[i].data[11]), &(data[i].data[12]), &(data[i].data[13]), &(data[i].data[14]), &(data[i].data[15]), &(data[i].data[16]), &(data[i].data[17]), &(data[i].data[18]), &(data[i].data[19]), &(data[i].data[20]), &(data[i].data[21]), &(data[i].data[22])) < 0) {
-            perror("CSV file parse error");
-            return -1;
+            break;
         }
     }
     fclose(fp);
@@ -101,8 +109,12 @@ int main()
     input.nworkers = 1;
     input.memlimit = 100000000000;
 
+#if 0
     void* (*run)(void*) = (void* (*)(void*))dlsym(handle2, "run");
     void* result = (*run)((void*)&input);
+#else
+    void* result = run((void*)&input);
+#endif
     typedef struct { i64 output; i64 runid; i64 errno; } output_arg_t;
     output_arg_t* output = (output_arg_t*)result;
     printf("output %llx, runid %lld, errno %lld\n", output->output, output->runid, output->errno);
