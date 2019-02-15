@@ -1,0 +1,195 @@
+#!/usr/bin/env python
+
+import argparse
+import time
+from weldnumpy import weldarray
+import numpy as np
+import weldnumpy as wn
+import scipy.special as ss
+import grizzly.grizzly as gr
+from grizzly.lazy_op import LazyOpResult
+
+invsqrt2 = 1.0 #0.707
+USE_ERF = True
+
+def get_data(num_els):
+    #np.random.seed(1)
+    np.random.seed(2592)
+    # random prices between 1 and 101
+    price = np.float64(np.random.rand(num_els) * np.float64(100.0))
+    # random prices between 0 and 101
+    strike = np.float64(np.random.rand(num_els) * np.float64(100.0))
+    # random maturity between 0 and 4
+    t = np.float64(np.float64(1.0) + np.random.rand(num_els) * np.float64(6.0))
+    # random rate between 0 and 1
+    rate = np.float64(np.float64(0.01) + np.random.rand(num_els))
+    # random volatility between 0 and 1
+    vol = np.float64(np.float64(0.01) + np.random.rand(num_els))
+
+    print('***********Got Data*************')
+    return price, strike, t, rate, vol
+
+
+def blackscholes(price, strike, t, rate, vol, int_eval, use_group):
+    '''
+    Implements the Black Scholes pricing model using NumPy and SciPy.
+    Based on the code given by Intel, but cleaned up.
+
+    The following links were used to define the constants c05 and c10:
+
+    http://codereview.stackexchange.com/questions/108533/fastest-possible-cython-for-black-scholes-algorithm
+    http://gosmej1977.blogspot.com/2013/02/black-and-scholes-formula.html
+    '''
+    c05 = np.float64(3.0)
+    c10 = np.float64(1.5)
+    #print('rate: ', len(rate))
+    #print('t: ', len(t))
+
+    # rsig = rate + (vol*vol) * c05
+    rsig = rate + (vol*vol) * c05
+    vol_sqrt = vol * np.sqrt(t)
+
+    d1 = (np.log(price / strike) + rsig * t) / vol_sqrt
+    d2 = d1 - vol_sqrt
+
+    if isinstance(price, weldarray) and USE_ERF:
+        # weldarrays. weldnumpy supports erf directly
+        d1 = c05 + c05 * wn.erf(d1 * invsqrt2)
+        d2 = c05 + c05 * wn.erf(d2 * invsqrt2)
+    else:
+        # these are numpy arrays, so use scipy's erf function
+        d1 = c05 + c05 * ss.erf(d1 * invsqrt2)
+        d2 = c05 + c05 * ss.erf(d2 * invsqrt2)
+
+    # e_rt = np.exp((-rate) * t)
+    e_rt = np.exp((0.0-rate) * t)
+
+    if isinstance(price, weldarray) and int_eval:
+        price = price.evaluate()
+        d1 = d1.evaluate()
+        d2 = d2.evaluate()
+        e_rt = e_rt.evaluate()
+        strike = strike.evaluate()
+
+    # CORRECT ONE:
+    call = (price * d1) - (e_rt * strike * d2)
+    put = e_rt * strike * (c10 - d2) - price * (c10 - d1)
+
+    if isinstance(call, weldarray) and use_group:
+        lazy_ops = generate_lazy_op_list([call, put])
+        outputs = gr.group(lazy_ops).evaluate(True, passes=wn.CUR_PASSES)
+
+        call = weldarray(outputs[0])
+        put = weldarray(outputs[1])
+
+    if isinstance(call, weldarray) and not use_group:
+        call = call.evaluate()
+        put = put.evaluate()
+
+    return call, put
+
+def generate_lazy_op_list(arrays):
+    ret = []
+    for a in arrays:
+        lazy_arr = LazyOpResult(a.weldobj, a._weld_type, 1)
+        ret.append(lazy_arr)
+    return ret
+
+def run_blackscholes(args, use_weld):
+    p, s, t, r, v = get_data(args.num_els)
+
+    if use_weld:
+        p = weldarray(p)
+        s = weldarray(s)
+        t = weldarray(t)
+        r = weldarray(r)
+        v = weldarray(v)
+
+    start = time.time()
+    call, put = blackscholes(p, s, t, r, v, args.int_eval, args.use_group)
+
+    if isinstance(call, weldarray):
+	print("**************************************************")
+	print("weld took: ", time.time() - start)
+        #print "weld took: %.4f (result=%.4f)" % (time.time() - start, call[0])
+	print("**************************************************")
+    else:
+	print("**************************************************")
+        print "numpy took: %.4f (result=%.4f)" % (time.time() - start, call[0])
+	print("**************************************************")
+
+    return call, put
+
+def print_args(args):
+    d = vars(args)
+    print('params: ', str(d))
+
+def process_weld_args(args):
+    global USE_ERF
+    wn.remove_pass(args.remove_pass)
+
+    if args.remove_ops:
+        USE_ERF = False
+        wn.remove_all_ops()
+        # now need to add stuff back in as needed.
+        ops = args.add_ops.split(',')
+        print(ops)
+        wn.add_ops(ops)
+        if 'erf' in ops:
+            USE_ERF = True
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description="give num_els of arrays used for blackscholes"
+    )
+    parser.add_argument('-n', "--num_els", type=int, required=True,
+                        help="num_els of 1d arrays")
+    parser.add_argument('-ie', "--int_eval", type=int, required=True,
+                        help="num_els of 1d arrays")
+    parser.add_argument('-g', "--use_group", type=int,
+                        default=1, help="num_els of 1d arrays")
+    parser.add_argument('-p', "--remove_pass", type=str,
+                        default="whatever_string", help="will remove the pass containing this str")
+    parser.add_argument('-numpy', "--use_numpy", type=int, required=False, default=0,
+                        help="use numpy or not in this run")
+    parser.add_argument('-weld', "--use_weld", type=int, required=False, default=0,
+                        help="use weld or not in this run")
+    parser.add_argument('-remove_ops', type=int, required=False, default=0,
+                        help="remove supported weld ops")
+    parser.add_argument('-add_ops', type=str, required=False, default="",
+                        help="comma separated list of ops to add")
+
+    args = parser.parse_args()
+    print_args(args)
+
+    if args.use_numpy:
+	for i in range(1):
+		call, put = run_blackscholes(args, False)
+        print("*********Finished Numpy**********")
+    else:
+        print('Not running numpy')
+
+    if args.use_weld:
+        process_weld_args(args)
+        print('Passes: ', wn.CUR_PASSES)
+	for i in range(1):
+		call2, put2 = run_blackscholes(args, True)
+        print('END!')   # So we can stop computing weld timings and stuff
+    else:
+        print('Not running weld')
+
+    # Correctness check.
+    if args.use_numpy and args.use_weld:
+        print("close put, put2: ", np.allclose(put, put2))
+        print("close call1, call2: ", np.allclose(call, call2))
+
+        # as we find out, they are only slightly different.
+        mistakes = 0
+        for i in range(len(call2)):
+            if (put[i] - put2[i] > 5.00):
+            # if (call[i] != call2[i]):
+                mistakes += 1
+                # print('call: ', call[i])
+                # print('call2: ', call2[i])
+        print("mistakes: ", mistakes)
