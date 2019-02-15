@@ -99,4 +99,4 @@ ENV/
 .ropeproject
 
 # Benchmark binaries
-bench
+#bench
