@@ -1,0 +1,16 @@
+{
+    "compile":false,
+    "params": {
+        "f": ["data/delays_sf=%d.csv"],
+        "s": [2],
+        "p": [
+          "group",
+          "unroll-static-loop infer-size inline-literals unroll-structs predicate short-circuit-booleans vectorize group" ,
+          "loop-fusion unroll-static-loop inline-literals unroll-structs predicate short-circuit-booleans vectorize group" ,
+          "loop-fusion unroll-static-loop infer-size inline-literals short-circuit-booleans vectorize group",
+          "loop-fusion unroll-static-loop infer-size inline-literals unroll-structs predicate short-circuit-booleans group",
+          "loop-fusion unroll-static-loop infer-size inline-literals unroll-structs predicate short-circuit-booleans"
+        ],
+        "t": [1]
+    }
+}
