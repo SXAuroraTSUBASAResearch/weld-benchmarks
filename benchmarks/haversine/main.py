@@ -28,7 +28,11 @@ def haversine(lat1, lon1, lat2, lon2):
     
     miles_constant = 3959.0
     start2 = time.time()
-    lat1, lon1, lat2, lon2 = map(np.deg2rad, [lat1, lon1, lat2, lon2]) 
+    #lat1, lon1, lat2, lon2 = map(np.deg2rad, [lat1, lon1, lat2, lon2]) 
+    lat1 = lat1 * np.pi / 180.0
+    lon1 = lon1 * np.pi / 180.0
+    lat2 = lat2 * np.pi / 180.0
+    lon2 = lon2 * np.pi / 180.0
     print("deg2rad took: ", time.time() - start2)
     dlat = lat2 - lat1 
     dlon = lon2 - lon1 
