@@ -119,7 +119,8 @@ double run_query_weld(struct gen_data *d) {
 
    // Run the module and get the result.
     conf = weld_conf_new();
-    weld_value_t result = weld_module_run(m, conf, weld_args, e);
+    weld_context_t context = weld_context_new(conf);
+    weld_value_t result = weld_module_run(m, context, weld_args, e);
     if (weld_error_code(e)) {
         const char *err = weld_error_message(e);
         printf("Error message: %s\n", err);

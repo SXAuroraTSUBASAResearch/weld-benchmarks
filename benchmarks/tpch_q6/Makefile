@@ -7,7 +7,7 @@ ifeq ($(UNAME_S),Linux)
     CC=gcc -fopenmp
 endif
 
-CPPFLAGS=-O3 -march=native -std=c++11 -I$(WELD_HOME)/c
+CPPFLAGS=-O3 -march=native -std=c++11 -I$(WELD_HOME)/weld-capi
 LDFLAGS=-L$(WELD_HOME)/target/release
 LIBS=-lweld
 
