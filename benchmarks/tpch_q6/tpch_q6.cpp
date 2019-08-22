@@ -95,6 +95,16 @@ double run_query_weld(struct gen_data *d) {
 
     struct timeval start, end, diff;
     gettimeofday(&start, 0);
+
+#if 0
+    const uint64_t weld_log_level_debug = 4;
+    const uint64_t weld_log_level_trace = 5;
+    weld_set_log_level(weld_log_level_debug);
+
+    weld_conf_set(conf, "weld.compile.dumpCode", "true");
+    weld_conf_set(conf, "weld.compile.dumpCodeDir", "./dump");
+#endif
+
     weld_module_t m = weld_module_compile(program, conf, e);
     weld_conf_free(conf);
     gettimeofday(&end, 0);
