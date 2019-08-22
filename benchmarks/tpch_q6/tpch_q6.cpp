@@ -105,6 +105,12 @@ double run_query_weld(struct gen_data *d) {
     weld_conf_set(conf, "weld.compile.dumpCodeDir", "./dump");
 #endif
 
+#if 0
+    // Exclude "short-circuit-booleans"
+    const char* passes = "inline-zip,inline-apply,inline-let,loop-fusion,unroll-static-loop,infer-size,algebraic,inline-literals,cse,predicate,vectorize";
+    weld_conf_set(conf, "weld.optimization.passes", passes);
+#endif
+
     weld_module_t m = weld_module_compile(program, conf, e);
     weld_conf_free(conf);
     gettimeofday(&end, 0);
