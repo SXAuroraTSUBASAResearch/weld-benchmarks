@@ -20,6 +20,10 @@
 
 #include "weld.h"
 
+// Another benchmark for filter.
+//#define TPCHQ6_FILTER
+
+
 // Value for the predicate to pass.
 #define PASS 19940101
 #define FAIL 19930101
@@ -66,6 +70,7 @@ weld_vector<T> make_weld_vector(T *data, int64_t length) {
 }
 
 double run_query(struct gen_data *d) {
+#ifndef TPCHQ6_FILTER
     double final_result = 0.0;
     for (int i = 0; i < d->num_items; i++) {
         struct lineitems *items = d->items;
@@ -78,14 +83,45 @@ double run_query(struct gen_data *d) {
 
     }
     return final_result;
+#else
+    size_t len = 10;
+    double* data = (double*) malloc(len * sizeof(double)); 
+    size_t ptr = 0;
+    for (int i = 0; i < d->num_items; i++) {
+        struct lineitems *items = d->items;
+        if (items->shipdates[i] >= 19940101 && items->shipdates[i] < 19950101 &&
+            items->discounts[i] >= 5.0 && items->discounts[i] <= 7.0 && items->quantities[i] < 24.0) {
+            double val = (items->discounts[i] * items->extended_prices[i]);
+	    if (ptr >= len) {
+	        len *= 2;
+		double* next = (double*) realloc(data, len * sizeof(double));
+		if (next == NULL) {
+		  free(data);
+		  perror("cannot reallocate");
+		}
+		data = next;
+	    }
+	    data[ptr] = val;
+	    ptr += 1;
+        }
+    }
+    double final_result = ptr;
+    free(data);
+    return final_result;
+#endif  // TPCHQ6_FILTER
 }
+
 
 double run_query_weld(struct gen_data *d) {
     // Compile Weld module.
     weld_error_t e = weld_error_new();
     weld_conf_t conf = weld_conf_new();
 
+#ifndef TPCHQ6_FILTER
     FILE *fptr = fopen("tpch_q6.weld", "r");
+#else
+    FILE *fptr = fopen("tpch_q6_filter.weld", "r");
+#endif
     fseek(fptr, 0, SEEK_END);
     int string_size = ftell(fptr);
     rewind(fptr);
@@ -142,8 +178,14 @@ double run_query_weld(struct gen_data *d) {
         printf("Error message: %s\n", err);
         exit(1);
     }
+#ifndef TPCHQ6_FILTER
     double *result_data = (double *) weld_value_data(result);
     double final_result = *result_data;
+#else
+    weld_vector<double> *result_data = (weld_vector<double> *) weld_value_data(result);
+    weld_vector<double> tmp = *result_data;
+    double final_result = double(tmp.length);  // only return length
+#endif
 
     // Free the values.
     weld_value_free(result);
