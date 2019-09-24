@@ -1,0 +1,12 @@
+|x:vec[f64]|
+result(
+    for(x, 
+        appender[?](len(x)),
+        |b,i,e|
+        if(
+            e >= 0.0,
+            merge(b, e),
+            b       
+        )
+    )
+)
