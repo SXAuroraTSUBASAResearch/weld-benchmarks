@@ -1,0 +1,36 @@
+|l_shipdate:vec[i32],l_discount:vec[f64],l_quantity:vec[f64],l_ep:vec[f64]|
+  result(
+    for(
+      zip(
+l_shipdate,
+        l_discount,
+        l_quantity,
+        l_ep        
+      ),
+      appender[f64](len(l_discount)),
+      |b__3,i__3,x__2|
+        (let cse__6=(x__2.$0);
+          (let cse__8=(x__2.$1);
+          if(
+          if(
+            if(
+              if(
+                if(
+                  (cse__6>=19940101),
+                  (cse__6<19950101),
+                  false
+                ),
+                (cse__8>=5.0),
+                false
+              ),
+              (cse__8<=7.0),
+              false
+            ),
+            (x__2.$2<24.0),
+            false
+          ),
+          merge(b__3,(cse__8*x__2.$3)),
+          b__3
+        )))
+    )
+  )
