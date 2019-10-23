@@ -110,8 +110,8 @@ def run_blackscholes(args, use_weld):
 
     if isinstance(call, weldarray):
 	print("**************************************************")
-	print("weld took: ", time.time() - start)
-        #print "weld took: %.4f (result=%.4f)" % (time.time() - start, call[0])
+	#print("weld took: ", time.time() - start)
+        print "weld took: %.4f (result=%.4f)" % (time.time() - start, call[0])
 	print("**************************************************")
     else:
 	print("**************************************************")
