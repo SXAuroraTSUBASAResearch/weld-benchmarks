@@ -208,6 +208,7 @@ def main():
         end = time.time()
         print('****************************')
         print('numpy took {} seconds'.format(end-start))
+        print('result=',sum(R))
         print('****************************')
     else:
         print('Not running numpy')
@@ -228,6 +229,7 @@ def main():
         end = time.time()
         print('****************************')
         print('weld took {} seconds'.format(end-start)) 
+        print('result=',sum(R2))
         print('****************************')
     else:
         print('Not running weld')
